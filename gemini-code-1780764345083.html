@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catchy Retro Game Music</title>
+    <style>
+        body {
+            background: #0f172a;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .music-card {
+            background: #1e293b;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            text-align: center;
+            border: 2px solid #3b82f6;
+        }
+        h1 {
+            margin-top: 0;
+            color: #3b82f6;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        p {
+            color: #94a3b8;
+            font-size: 14px;
+        }
+        .btn {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+            transition: transform 0.2s, background 0.2s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        .btn.playing {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="music-card">
+        <h1>Arcade Rush</h1>
+        <p>Dynamic Web Audio Loop Track</p>
+        <button class="btn" id="audio-toggle">▶ PLAY TRACK</button>
+    </div>
+
+    <script>
+        let audioCtx = null;
+        let isPlaying = false;
+        let nextNoteTime = 0.0;
+        let timerId = null;
+        let currentBeat = 0;
+
+        const tempo = 130; // High energy BPM
+        const secondsPerBeat = 60.0 / tempo;
+        const tickLength = secondsPerBeat / 2; // Eighth notes
+
+        // Catchy Melodic Hook Sequence (Frequencies in Hz)
+        const C4 = 261.63, D4 = 293.66, E4 = 329.63, G4 = 392.00, A4 = 440.00;
+        const C5 = 523.25, D5 = 587.33, E5 = 659.25, G5 = 783.99;
+        
+        const melody = [
+            C5, null, E5, G5,  A4, null, C5, null,
+            G4, null, B4, D5,  C5, null, null, null,
+            A4, null, C5, E5,  G5, null, E5, null,
+            D5, null, B4, G4,  C5, null, G5, null
+        ];
+
+        // Driving Chiptune Bassline Sequence
+        const C3 = 130.81, G2 = 98.00, A2 = 110.00, F2 = 87.31;
+        const bassline = [
+            C3, C3, E4, C3,  A2, A2, C4, A2,
+            G2, G2, B3, G2,  C3, G2, C3, null,
+            A2, A2, C4, A2,  F2, F2, A3, F2,
+            G2, G2, B3, G2,  C3, G3, C4, null
+        ];
+
+        function initAudio() {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        function playSynthTone(time, freq, type, duration, vol) {
+            if (!freq) return;
+
+            let osc = audioCtx.createOscillator();
+            let gainNode = audioCtx.createGain();
+
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, time);
+
+            // Vintage Chiptune Volume Envelope
+            gainNode.gain.setValueAtTime(vol, time);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, time + duration - 0.02);
+
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            osc.start(time);
+            osc.stop(time + duration);
+        }
+
+        function playNoiseDrum(time, isSnare) {
+            // Simple retro noise drum simulation using short sine drops
+            let osc = audioCtx.createOscillator();
+            let gainNode = audioCtx.createGain();
+            
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(isSnare ? 180 : 100, time);
+            osc.frequency.exponentialRampToValueAtTime(0.01, time + 0.1);
+
+            gainNode.gain.setValueAtTime(0.3, time);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, time + 0.1);
+
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            osc.start(time);
+            osc.stop(time + 0.1);
+        }
+
+        function scheduler() {
+            while (nextNoteTime < audioCtx.currentTime + 0.1) {
+                scheduleNote(currentBeat, nextNoteTime);
+                nextNoteTime += tickLength;
+                currentBeat = (currentBeat + 1) % 32; // Loop entire 32-step grid
+            }
+            timerId = setTimeout(scheduler, 25);
+        }
+
+        function scheduleNote(beat, time) {
+            // 1. Play Lead Melody (Square Wave for that true arcade feel)
+            if (melody[beat]) {
+                playSynthTone(time, melody[beat], 'square', tickLength * 1.5, 0.08);
+            }
+
+            // 2. Play Bass Tracker (Triangle Wave for deep vintage tone)
+            if (bassline[beat]) {
+                playSynthTone(time, bassline[beat], 'triangle', tickLength * 0.9, 0.15);
+            }
+
+            // 3. Simple Retro Beats (Kick on 1 & 5, Snare on 3 & 7)
+            let quarterStep = beat % 8;
+            if (quarterStep === 0 || quarterStep === 4) {
+                playNoiseDrum(time, false); // Kick
+            } else if (quarterStep === 2 || quarterStep === 6) {
+                playNoiseDrum(time, true); // Snare
+            }
+        }
+
+        document.getElementById('audio-toggle').addEventListener('click', function() {
+            if (!audioCtx) initAudio();
+
+            if (isPlaying) {
+                // Stop Track
+                clearTimeout(timerId);
+                this.innerText = "▶ PLAY TRACK";
+                this.classList.remove('playing');
+                isPlaying = false;
+            } else {
+                // Start Track
+                audioCtx.resume();
+                nextNoteTime = audioCtx.currentTime + 0.05;
+                currentBeat = 0;
+                scheduler();
+                this.innerText = "⏹ STOP TRACK";
+                this.classList.add('playing');
+                isPlaying = true;
+            }
+        });
+    </script>
+</body>
+</html>
