@@ -2,991 +2,658 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Stickman Clash Mobile - Pro Multiplayer</title>
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BlackHole.io - Dense Garbage & Gigantanormus PvP Arena</title>
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
     <style>
-        * { box-sizing: border-box; user-select: none; -webkit-user-select: none; margin: 0; padding: 0; }
-        body, html { width: 100%; height: 100%; overflow: hidden; background-color: #050b14; font-family: 'Segoe UI', Roboto, sans-serif; color: #fff; }
-
-        /* --- DEVICE SELECTION SCREEN --- */
-        #device-screen { display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; height: 100%; background: radial-gradient(circle at center, #1a2a4a 0%, #050b14 100%); position: absolute; top: 0; left: 0; z-index: 100; gap: 30px; }
-        .device-title { font-size: 32px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; text-align: center; background: linear-gradient(180deg, #fff, #a0aab5); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .device-grid { display: flex; gap: 30px; }
-        .device-card { background: rgba(255, 255, 255, 0.03); border: 2px solid rgba(255, 255, 255, 0.1); border-radius: 20px; width: 180px; height: 180px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 15px; cursor: pointer; transition: all 0.3s; }
-        .device-card:hover { background: rgba(0, 198, 255, 0.1); border-color: #00c6ff; transform: translateY(-5px); }
-        .device-icon { font-size: 48px; }
-        .device-label { font-weight: 700; font-size: 16px; }
-
-        /* --- UI HOMEPAGE SCREEN --- */
-        #menu-screen { display: none; flex-direction: column; width: 100%; height: 100%; background: radial-gradient(circle at 30% 50%, #10254c 0%, #040812 100%); padding: 20px 40px; position: absolute; top: 0; left: 0; z-index: 10; }
-        .top-bar { display: flex; justify-content: space-between; align-items: center; width: 100%; height: 60px; }
-        .profile { display: flex; align-items: center; background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); padding: 6px 20px 6px 8px; border-radius: 30px; border: 1px solid rgba(255, 255, 255, 0.1); }
-        .avatar { width: 36px; height: 36px; background: linear-gradient(135deg, #00b4db, #0083b0); border-radius: 50%; margin-right: 12px; }
-        .username { font-size: 14px; font-weight: 700; }
-        .username span { color: #00ffcc; margin-left: 5px; font-size: 12px; background: rgba(0, 255, 204, 0.1); padding: 2px 6px; border-radius: 4px; }
-        .currency { background: rgba(255, 215, 0, 0.08); padding: 8px 20px; border-radius: 20px; color: #ffd700; border: 1px solid rgba(255, 215, 0, 0.3); font-weight: 700; font-size: 15px; transition: transform 0.2s; }
-
-        .main-content { display: flex; flex: 1; justify-content: space-between; align-items: center; margin-top: 20px; gap: 20px; }
-        .character-showcase { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; padding-left: 20px; }
-        .game-title { font-size: 42px; font-weight: 900; line-height: 0.95; margin-bottom: 20px; text-transform: uppercase; background: linear-gradient(180deg, #ffffff 40%, #a0aab5 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .game-title span { background: linear-gradient(135deg, #ff416c, #ff4b2b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .menu-artwork { width: 100%; max-width: 420px; height: 220px; border-radius: 12px; border: 2px solid rgba(255, 255, 255, 0.15); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); object-fit: cover; background: #111; }
-
-        .modes-grid { width: 45%; height: 85%; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 15px; }
-        .mode-card { background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; display: flex; flex-direction: column; justify-content: center; align-items: center; color: rgba(255, 255, 255, 0.6); font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.25s; text-align: center; padding: 5px; }
-        .mode-card:hover { background: rgba(255, 255, 255, 0.05); color: #fff; }
-        .mode-card.active-mode { background: linear-gradient(135deg, #0072ff 0%, #00c6ff 100%); border: none; color: #fff; box-shadow: 0 8px 25px rgba(0, 114, 255, 0.35); }
-        .mode-card.shop-btn { background: linear-gradient(135deg, #f1c40f 0%, #e67e22 100%); border: none; color: #fff; box-shadow: 0 8px 25px rgba(241, 196, 15, 0.2); }
-        .mode-desc { font-size: 10px; opacity: 0.6; font-weight: normal; margin-top: 4px; }
-
-        /* --- MULTIPLAYER ROOM OVERLAY --- */
-        #mp-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(3, 7, 15, 0.95); z-index: 100; justify-content: center; align-items: center; flex-direction: column; gap: 20px; }
-        .mp-box { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 30px; width: 90%; max-width: 455px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
-        .room-input { width: 100%; padding: 12px; background: rgba(0,0,0,0.4); border: 1px solid #00c6ff; border-radius: 8px; color: #fff; font-size: 16px; font-weight: bold; text-align: center; margin: 15px 0; text-transform: uppercase; }
-        .mp-btn { width: 100%; padding: 12px; margin: 6px 0; border: none; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; color: #fff; }
-        .host-bg { background: #0072ff; }
-        .join-bg { background: #2ecc71; }
-        .cancel-bg { background: #e74c3c; margin-top: 15px; }
-        #room-status { font-size: 12px; color: #00ffcc; margin-top: 10px; min-height: 16px; }
-
-        /* --- SHOP SCREEN --- */
-        #shop-screen { display: none; flex-direction: column; width: 100%; height: 100%; background: rgba(4, 8, 18, 0.98); position: absolute; top: 0; left: 0; z-index: 20; padding: 20px 40px; }
-        .shop-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .shop-title { font-size: 28px; font-weight: 900; color: #f1c40f; }
-        .shop-content { display: flex; flex: 1; gap: 20px; overflow-y: auto; }
-        .shop-column { flex: 1; background: rgba(255,255,255,0.03); border-radius: 10px; padding: 15px; border: 1px solid rgba(255,255,255,0.05); }
-        .shop-char-name { font-size: 14px; font-weight: bold; color: #fff; margin-bottom: 5px; text-align: center; }
-        .skin-item { display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.4); padding: 10px; border-radius: 8px; margin-bottom: 10px; }
-        .skin-preview { width: 30px; height: 30px; border-radius: 5px; border: 2px solid #fff; position: relative; }
-        .skin-benefit { font-size: 10px; color: #2ecc71; margin-top: 2px; text-align: center; font-weight: bold; }
-        .buy-btn { padding: 5px 15px; font-size: 12px; font-weight: bold; background: #2ecc71; color: #fff; border: none; border-radius: 15px; cursor: pointer; }
-        .buy-btn:disabled { background: #555; color: #aaa; cursor: not-allowed; }
-        .btn-close { padding: 10px 25px; background: #e74c3c; color: white; border: none; border-radius: 20px; font-weight: bold; cursor: pointer; }
-
-        /* --- CHARACTER SELECTION SCREEN --- */
-        #char-select-screen { display: none; flex-direction: column; width: 100%; height: 100%; background: rgba(4, 8, 18, 0.95); backdrop-filter: blur(15px); position: absolute; top: 0; left: 0; z-index: 15; padding: 20px; overflow-y: auto; }
-        .select-header { text-align: center; font-size: 24px; font-weight: 900; margin-bottom: 10px; color: #00ffcc; letter-spacing: 2px;}
-        .select-panels { display: flex; justify-content: space-around; flex: 1; gap: 15px; }
-        .player-panel { width: 48%; display: flex; flex-direction: column; align-items: center; background: rgba(255,255,255,0.05); border-radius: 15px; padding: 15px; border: 1px solid rgba(255,255,255,0.1); }
-        .panel-title { font-size: 16px; font-weight: bold; margin-bottom: 8px; text-transform: uppercase; }
-        .p1-title { color: #ff914d; }
-        .p2-title { color: #4facfe; }
-        .char-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; margin-bottom: 10px; }
-        .char-btn { padding: 12px 6px; border-radius: 10px; background: rgba(0,0,0,0.5); border: 2px solid transparent; text-align: center; font-weight: bold; font-size: 11px; cursor: pointer; transition: 0.2s; }
-        .char-btn.selected { transform: scale(1.03); }
-        .p1-selected { border-color: #ff914d; background: rgba(255, 145, 77, 0.2); }
-        .p2-selected { border-color: #4facfe; background: rgba(79, 172, 254, 0.2); }
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
+            background-color: #0b0b10; font-family: 'Segoe UI', Roboto, sans-serif;
+            user-select: none; color: #fff;
+        }
+        .screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 100; background: radial-gradient(circle, #10192f 0%, #04060d 100%);
+        }
+        .hidden { display: none !important; }
         
-        .bot-select-section { width: 100%; margin-top: 10px; padding-top: 10px; border-top: 1px dashed rgba(255,255,255,0.1); text-align: center; }
-        .bot-title { font-size: 12px; color: #ffd700; margin-bottom: 6px; font-weight: bold; }
+        /* Main Layout Grid matching the uploaded style feed */
+        .feed-container {
+            display: flex; flex-direction: column; align-items: center; gap: 20px;
+        }
 
-        .skin-row { display: flex; gap: 8px; justify-content: center; width: 100%; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 10px; margin-bottom: 5px; }
-        .tiny-square { width: 22px; height: 22px; border-radius: 4px; border: 2px solid transparent; cursor: pointer; transition: 0.2s; }
-        .tiny-square.locked { opacity: 0.2; cursor: not-allowed; position: relative; background-image: radial-gradient(#000 20%, transparent 20%); }
-        .tiny-square.locked::after { content: '🔒'; position: absolute; top: 0px; left: 2px; font-size: 9px; }
-        .tiny-square.active-p1 { border-color: #fff; transform: scale(1.15); box-shadow: 0 0 8px #ff914d; }
-        .tiny-square.active-p2 { border-color: #fff; transform: scale(1.15); box-shadow: 0 0 8px #4facfe; }
+        /* The Game Card matching the screenshot style */
+        .game-card {
+            width: 360px;
+            height: 270px;
+            background: #1e1e2f;
+            border-radius: 16px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+            border: 3px solid #7b2cbf;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .game-card:hover {
+            transform: scale(1.02);
+            box-shadow: 0 12px 32px rgba(123, 44, 191, 0.4);
+        }
 
-        .start-fight-btn { margin-top: 10px; padding: 12px 40px; font-size: 18px; font-weight: 900; background: linear-gradient(135deg, #ff416c, #ff4b2b); border: none; border-radius: 30px; color: white; cursor: pointer; box-shadow: 0 5px 20px rgba(255, 65, 108, 0.4); align-self: center;}
+        /* Top Left Icon Overlay badge */
+        .card-badge {
+            position: absolute; top: 12px; left: 12px;
+            background: #fff; width: 28px; height: 28px; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4); z-index: 5;
+        }
+        .card-badge::before {
+            content: "🌀"; font-size: 16px;
+        }
 
-        /* --- GAME ARENA SCREEN --- */
-        #game-screen { display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 5; }
-        canvas { width: 100%; height: 100%; display: block; }
-        .hud { position: absolute; top: 15px; left: 5%; width: 90%; display: flex; justify-content: space-between; align-items: center; pointer-events: none; }
-        .health-wrapper { width: 45%; display: flex; flex-direction: column; gap: 4px; }
-        .p2-wrapper { align-items: flex-end; }
-        .player-label { color: rgba(255, 255, 255, 0.8); font-size: 11px; font-weight: 700; text-transform: uppercase; display: flex; gap: 10px; }
-        .health-bar-container { width: 100%; height: 8px; background: rgba(255, 255, 255, 0.05); border-radius: 4px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.1); position: relative; }
-        .health-bar { height: 100%; width: 100%; transition: width 0.15s; }
-        #p1-health { background: linear-gradient(90deg, #ffbd59, #ff914d); }
-        #p2-health { background: linear-gradient(90deg, #00f2fe, #4facfe); }
+        /* Image preview filling the card frame */
+        .card-thumbnail {
+            width: 100%; height: 100%; object-fit: cover;
+            display: block;
+        }
+
+        /* Bottom text overlay strip matching the screenshot */
+        .card-footer {
+            position: absolute; bottom: 0; left: 0; width: 100%;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.85) 40%, rgba(0, 0, 0, 0.95));
+            padding: 15px 18px; box-sizing: border-box;
+            text-align: left; z-index: 4;
+        }
+        .card-title {
+            font-size: 16px; font-weight: bold; color: #fff;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+            letter-spacing: 0.5px;
+        }
+
+        /* Multiplayer Config Form Card below the feed item */
+        .menu-form {
+            background: rgba(255, 255, 255, 0.05); padding: 25px; border-radius: 16px;
+            backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center; width: 360px; box-sizing: border-box;
+        }
         
-        .team-sub-bars { width: 100%; display: flex; gap: 5px; margin-top: 2px; }
-        .bot-bar-container { flex: 1; height: 5px; background: rgba(0,0,0,0.4); border-radius: 2px; overflow: hidden; }
-        .bot-health { height: 100%; width: 100%; background: #2ecc71; transition: width 0.15s; }
-        #p2-bot-health { background: #a82ecb; }
+        .lobby-card {
+            background: rgba(255, 255, 255, 0.05); padding: 30px; border-radius: 16px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1); text-align: center; width: 360px;
+        }
 
-        /* VIRTUAL CONTROLS */
-        .controls-container { position: absolute; bottom: 0; left: 0; width: 100%; height: 160px; display: flex; justify-content: space-between; align-items: center; padding: 0 40px 15px 40px; pointer-events: none; }
-        .zone { display: flex; align-items: center; gap: 20px; pointer-events: auto; }
-        .joystick-container { width: 100px; height: 100px; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 50%; display: flex; justify-content: center; align-items: center; position: relative; backdrop-filter: blur(10px); touch-action: none; }
-        .joystick-trackpad { position: absolute; width: 100%; height: 100%; border-radius: 50%; top: 0; left: 0; z-index: 2; }
-        .joystick-knob { width: 38px; height: 38px; background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 50%; position: absolute; z-index: 1; pointer-events: none; }
-        .action-container { display: flex; gap: 10px; }
-        .btn-action { width: 50px; height: 50px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 12px; font-weight: 900; backdrop-filter: blur(10px); touch-action: none; }
-        .btn-spec { background: linear-gradient(135deg, #8e44ad, #f1c40f); border: 1px solid #ffd700; color: #fff; display: none; } 
+        input {
+            width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(0, 0, 0, 0.4);
+            color: white; font-size: 15px; box-sizing: border-box; text-align: center;
+        }
+        button {
+            width: 100%; padding: 13px; margin: 8px 0; border: none; border-radius: 8px;
+            font-size: 15px; font-weight: bold; cursor: pointer; transition: all 0.2s ease;
+        }
+        .btn-primary { background: linear-gradient(135deg, #ff0055, #990033); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(255, 0, 85, 0.4); }
+        .btn-secondary { background: linear-gradient(135deg, #00ffcc, #00b38f); color: #000; }
+        .btn-secondary:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0, 255, 204, 0.4); }
+        .divider { margin: 12px 0; color: rgba(255,255,255,0.4); font-size: 13px; letter-spacing: 1px; }
+        #statusText { font-size: 14px; color: #ffcc00; margin-top: 8px; font-weight: bold; }
+        
+        #hud { position: absolute; top: 20px; left: 20px; pointer-events: none; z-index: 10; }
+        #score-board { font-size: 24px; font-weight: bold; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); }
+        #coin-count { font-size: 20px; color: #ffd700; font-weight: bold; margin-top: 4px; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); }
+        #room-tag { font-size: 14px; color: rgba(255,255,255,0.6); margin-top: 5px; }
+        
+        #leaderboard {
+            position: absolute; top: 20px; right: 20px; background: rgba(0, 0, 0, 0.6);
+            padding: 15px; border-radius: 10px; width: 220px; backdrop-filter: blur(5px);
+            border: 1px solid rgba(255,255,255,0.1); pointer-events: none; z-index: 10;
+        }
+        .lb-title { text-align: center; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 5px; margin-bottom: 8px; color: #ff007c; }
+        .lb-row { display: flex; justify-content: space-between; font-size: 14px; margin: 4px 0; }
+        .lb-row.local-player { color: #ffeb3b; font-weight: bold; }
+        
+        #deathAlert {
+            position: absolute; top: 20%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(255, 0, 85, 0.9); color: white; padding: 15px 30px; border-radius: 30px;
+            font-size: 20px; font-weight: bold; box-shadow: 0 0 20px rgba(255, 0, 85, 0.6);
+            z-index: 200; pointer-events: none; opacity: 0; transition: opacity 0.3s ease;
+        }
 
-        /* OVERLAY */
-        #game-over { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(4, 8, 18, 0.9); z-index: 30; flex-direction: column; justify-content: center; align-items: center; }
-        #win-text { font-size: 36px; font-weight: 900; margin-bottom: 10px; }
-        #reward-text { font-size: 20px; color: #ffd700; margin-bottom: 25px; font-weight: bold; }
-        .btn-restart { padding: 12px 35px; font-size: 14px; font-weight: 700; color: #fff; background: linear-gradient(135deg, #0072ff 0%, #00c6ff 100%); border: none; border-radius: 25px; cursor: pointer; }
+        #shopToggleBtn {
+            position: absolute; bottom: 20px; left: 20px; z-index: 110;
+            background: linear-gradient(135deg, #ffd700, #ffa500); color: #000;
+            width: auto; padding: 12px 24px; border-radius: 30px; box-shadow: 0 4px 15px rgba(255,215,0,0.3);
+        }
+        #shopMenu {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(10, 15, 30, 0.95); padding: 30px; border-radius: 16px;
+            border: 2px solid #ffd700; width: 360px; z-index: 150; box-shadow: 0 0 30px rgba(0,0,0,0.8);
+        }
+        .shop-title { text-align: center; color: #ffd700; font-size: 24px; font-weight: bold; margin-bottom: 20px; }
+        .shop-item {
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px; padding: 12px; margin: 12px 0; display: flex;
+            justify-content: space-between; align-items: center;
+        }
+        .shop-item-info { text-align: left; }
+        .shop-item-name { font-weight: bold; color: #00ffcc; }
+        .shop-item-desc { font-size: 12px; color: rgba(255,255,255,0.6); margin-top: 2px; }
+        .shop-btn {
+            background: #ffd700; color: #000; width: auto; min-width: 90px;
+            padding: 8px 12px; margin: 0; font-size: 14px; border-radius: 6px;
+        }
+        .shop-btn:disabled { background: #555; color: #880000; cursor: not-allowed; }
+        .shop-close-btn { background: #ff0055; color: white; margin-top: 15px; }
+
+        canvas { display: block; width: 100vw; height: 100vh; }
     </style>
 </head>
 <body>
 
-    <div id="device-screen">
-        <h1 class="device-title">Select Your Device Mode</h1>
-        <div class="device-grid">
-            <div class="device-card" id="choose-computer">
-                <div class="device-icon">💻</div>
-                <div class="device-label">Computer</div>
-            </div>
-            <div class="device-card" id="choose-ipad">
-                <div class="device-icon">📱</div>
-                <div class="device-label">iPad / Touch</div>
-            </div>
-        </div>
-    </div>
-
-    <div id="menu-screen">
-        <div class="top-bar">
-            <div class="profile"><div class="avatar"></div><div class="username" id="display-name">PLAYER <span>PRO</span></div></div>
-            <div class="currency" id="ui-coins">🪙 300</div>
-        </div>
-        <div class="main-content">
-            <div class="character-showcase">
-                <h1 class="game-title">Stickman<br><span>Clash</span> Pro</h1>
-                <canvas id="menuArtworkCanvas" class="menu-artwork"></canvas>
-            </div>
-            <div class="modes-grid">
-                <div class="mode-card" id="btn-1player">
-                    <span>1 PLAYER</span>
-                    <span class="mode-desc">vs Random AI Robot</span>
-                </div>
-                <div class="mode-card active-mode" id="btn-2player-local">
-                    <span>2 PLAYERS</span>
-                    <span class="mode-desc">Local Same Screen</span>
-                </div>
-                <div class="mode-card" id="btn-team-battle">
-                    <span>TEAM BATTLE</span>
-                    <span class="mode-desc">Choose Your Bot Allies</span>
-                </div>
-                <div class="mode-card shop-btn" id="btn-shop">🛒 SHOP</div>
-                <div class="mode-card" id="btn-online-room" style="grid-column: span 2; background: linear-gradient(135deg, #9b59b6, #8e44ad); color:#fff; border:none;">
-                    <span>🌐 ONLINE ROOM SYSTEM</span>
-                    <span class="mode-desc">Play across different devices via Room Code</span>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="mp-modal">
-        <div class="mp-box">
-            <h2 style="color: #00c6ff; margin-bottom: 10px;">ONLINE ROOM CODES</h2>
-            <p style="font-size: 12px; opacity:0.8;">Connect and sync inputs across two different phones or computers.</p>
+    <div id="homeScreen" class="screen">
+        <div class="feed-container">
             
-            <input type="text" id="room-code-input" class="room-input" placeholder="ENTER ROOM CODE HERE">
-            
-            <button class="mp-btn host-bg" id="btn-host-room">CREATE NEW ROOM</button>
-            <button class="mp-btn join-bg" id="btn-join-room">JOIN EXISTING ROOM</button>
-            
-            <div id="room-status"></div>
-            
-            <button class="mp-btn cancel-bg" onclick="closeMPModal()">BACK TO MENU</button>
+            <div class="game-card" onclick="document.getElementById('usernameInput').focus()">
+                <div class="card-badge"></div>
+                <img src="https://i.postimg.cc/RVFz8zDY/Gemini-Generated-Image-mygxezmygxezmygx.png" alt="BlackHole.io Logo" class="card-thumbnail">
+                <div class="card-footer">
+                    <div class="card-title">BlackHole.io: Gigantanormus PvP Arena</div>
+                </div>
+            </div>
+
+            <div class="menu-form">
+                <input type="text" id="usernameInput" placeholder="Enter Nickname" maxlength="12" value="Player">
+                <button class="btn-primary" onclick="hostGame()">Host New Match</button>
+                <div class="divider">━ OR JOIN FRIENDS ━</div>
+                <input type="text" id="joinCodeInput" placeholder="Enter 4-Letter Code" maxlength="4" style="text-transform: uppercase;">
+                <button class="btn-secondary" onclick="joinGame()">Join Room</button>
+                <div id="statusText"></div>
+            </div>
+
         </div>
     </div>
 
-    <div id="shop-screen">
-        <div class="shop-header">
-            <div class="shop-title">STORE</div>
-            <div class="currency" id="shop-coins">🪙 300</div>
-            <button class="btn-close" onclick="closeShop()">BACK</button>
-        </div>
-        <div class="shop-content" id="shop-container"></div>
-    </div>
-
-    <div id="char-select-screen">
-        <div class="select-header" id="selection-main-header">CHOOSE YOUR FIGHTER</div>
-        <div class="select-panels">
-            <div class="player-panel" id="panel-p1-ui">
-                <div class="panel-title p1-title" id="p1-panel-title">PLAYER 1</div>
-                <div class="char-grid" id="p1-grid">
-                    <div class="char-btn p1-selected" data-char="basic">BASIC BRAWLER</div>
-                    <div class="char-btn" data-char="mage">MAGE MASTER</div>
-                    <div class="char-btn" data-char="apple">APPLE GUY</div>
-                    <div class="char-btn" data-char="ninja">SHADOW NINJA</div>
-                </div>
-                <div class="skin-row" id="p1-skin-row"></div>
-
-                <div class="bot-select-section" id="p1-bot-section" style="display:none;">
-                    <div class="bot-title">CHOOSE YOUR ALLY ROBOT</div>
-                    <div class="char-grid" id="p1-bot-grid">
-                        <div class="char-btn p1-selected" data-bot="basic">BOT BRAWLER</div>
-                        <div class="char-btn" data-bot="mage">BOT MAGE</div>
-                        <div class="char-btn" data-bot="apple">BOT APPLE</div>
-                        <div class="char-btn" data-bot="ninja">BOT NINJA</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="player-panel" id="panel-p2-ui">
-                <div class="panel-title p2-title" id="p2-panel-title">PLAYER 2</div>
-                <div class="char-grid" id="p2-grid">
-                    <div class="char-btn" data-char="basic">BASIC BRAWLER</div>
-                    <div class="char-btn p2-selected" data-char="mage">MAGE MASTER</div>
-                    <div class="char-btn" data-char="apple">APPLE GUY</div>
-                    <div class="char-btn" data-char="ninja">SHADOW NINJA</div>
-                </div>
-                <div class="skin-row" id="p2-skin-row"></div>
-
-                <div class="bot-select-section" id="p2-bot-section" style="display:none;">
-                    <div class="bot-title">CHOOSE FRIEND'S ALLY ROBOT</div>
-                    <div class="char-grid" id="p2-bot-grid">
-                        <div class="char-btn p2-selected" data-bot="basic">BOT BRAWLER</div>
-                        <div class="char-btn" data-bot="mage">BOT MAGE</div>
-                        <div class="char-btn" data-bot="apple">BOT APPLE</div>
-                        <div class="char-btn" data-bot="ninja">BOT NINJA</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <button class="start-fight-btn" id="btn-start-fight">FIGHT!</button>
-    </div>
-
-    <div id="game-screen">
-        <div class="hud">
-            <div class="health-wrapper">
-                <div class="player-label" id="p1-label">Player 1</div>
-                <div class="health-bar-container"><div id="p1-health" class="health-bar"></div></div>
-                <div class="team-sub-bars" id="p1-team-sub-bars" style="display:none;">
-                    <div class="bot-bar-container"><div id="p1-bot-health" class="bot-health"></div></div>
-                </div>
-            </div>
-            <div class="health-wrapper p2-wrapper">
-                <div class="player-label" id="p2-label">Player 2</div>
-                <div class="health-bar-container"><div id="p2-health" class="health-bar"></div></div>
-                <div class="team-sub-bars" id="p2-team-sub-bars" style="display:none;">
-                    <div class="bot-bar-container"><div id="p2-bot-health" class="bot-health"></div></div>
-                </div>
-            </div>
-        </div>
-        <canvas id="gameCanvas"></canvas>
-        <div class="controls-container" id="virtual-controls">
-            <div class="zone" id="ctrl-zone-p1">
-                <div class="joystick-container" id="joy-container-p1"><div class="joystick-knob" id="joy-knob-p1"></div><div class="joystick-trackpad" id="joy-pad-p1"></div></div>
-                <div class="action-container">
-                    <div class="btn-action" id="p1-atk" style="border-color:#ff914d; color:#ff914d;">ATK</div>
-                    <div class="btn-action btn-spec" id="p1-spec">SPEC</div>
-                </div>
-            </div>
-            <div class="zone" id="ctrl-zone-p2">
-                <div class="action-container">
-                    <div class="btn-action btn-spec" id="p2-spec">SPEC</div>
-                    <div class="btn-action" id="p2-atk" style="border-color:#4facfe; color:#4facfe;">ATK</div>
-                </div>
-                <div class="joystick-container" id="joy-container-p2"><div class="joystick-knob" id="joy-knob-p2"></div><div class="joystick-trackpad" id="joy-pad-p2"></div></div>
-            </div>
+    <div id="lobbyScreen" class="screen hidden">
+        <div class="lobby-card">
+            <h2>Room Code: <span id="lobbyCodeDisplay" style="color: #00ffcc;">----</span></h2>
+            <p style="font-size:14px; color:rgba(255,255,255,0.7)">Share this code with your friends!</p>
+            <button class="btn-primary" id="startBtn" onclick="startMatch()">Start Arena Match</button>
         </div>
     </div>
 
-    <div id="game-over">
-        <h2 id="win-text">PLAYER 1 WINS</h2>
-        <div id="reward-text">+50 COINS</div>
-        <button class="btn-restart" onclick="resetToMenu()">MENU</button>
+    <div id="hud">
+        <div id="score-board">Size: <span id="score">25</span>m</div>
+        <div id="coin-count">🪙 <span id="coins">0</span></div>
+        <div id="room-tag">Room Code: <span id="hudRoomCode">----</span></div>
     </div>
+
+    <button id="shopToggleBtn" class="hidden" onclick="toggleShop()">🛒 Shop (P)</button>
+    
+    <div id="shopMenu" class="hidden">
+        <div class="shop-title">Upgrades Counter</div>
+        
+        <div class="shop-item">
+            <div class="shop-item-info">
+                <div class="shop-item-name">Vacuum Power</div>
+                <div class="shop-item-desc">Pull trash from further away</div>
+            </div>
+            <button class="shop-btn" id="btnVac" onclick="buyUpgrade('vacuum')">150 🪙</button>
+        </div>
+
+        <div class="shop-item">
+            <div class="shop-item-info">
+                <div class="shop-item-name">Speed Boost</div>
+                <div class="shop-item-desc">Increases your maximum top speed</div>
+            </div>
+            <button class="shop-btn" id="btnSpeed" onclick="buyUpgrade('speed')">200 🪙</button>
+        </div>
+
+        <div class="shop-item">
+            <div class="shop-item-info">
+                <div class="shop-item-name">Coin Multiplier</div>
+                <div class="shop-item-desc">Earn more gold coins per item</div>
+            </div>
+            <button class="shop-btn" id="btnMult" onclick="buyUpgrade('mult')">250 🪙</button>
+        </div>
+
+        <button class="shop-close-btn" onclick="toggleShop()">Close Shop</button>
+    </div>
+
+    <div id="deathAlert">Eaten! Resetting to Level 1...</div>
+
+    <div id="leaderboard">
+        <div class="lb-title">Arena Standings</div>
+        <div id="leaderboardRows"></div>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
 
     <script>
-        // --- DEVICE SELECTION CONFIG ---
-        let selectedDevice = 'ipad'; // Default
-        document.getElementById('choose-computer').addEventListener('click', () => {
-            selectedDevice = 'computer';
-            document.getElementById('device-screen').style.display = 'none';
-            document.getElementById('menu-screen').style.display = 'flex';
-        });
-        document.getElementById('choose-ipad').addEventListener('click', () => {
-            selectedDevice = 'ipad';
-            document.getElementById('device-screen').style.display = 'none';
-            document.getElementById('menu-screen').style.display = 'flex';
-        });
-
-        // --- PROMO ARTWORK LOCAL PARSER HANDLER ---
-        const menuArtCanvas = document.getElementById('menuArtworkCanvas');
-        const mCtx = menuArtCanvas.getContext('2d');
-        menuArtCanvas.width = 420; menuArtCanvas.height = 220;
-        const promoImg = new Image();
-        promoImg.crossOrigin = "anonymous";
-        promoImg.src = "https://i.postimg.cc/rwkJV9Fm/Gemini-Generated-Image-s1kx94s1kx94s1kx.png";
-        promoImg.onload = function() { mCtx.drawImage(promoImg, 0, 0, menuArtCanvas.width, menuArtCanvas.height); };
-        promoImg.onerror = function() {
-            let artGrad = mCtx.createLinearGradient(0, 0, menuArtCanvas.width, menuArtCanvas.height);
-            artGrad.addColorStop(0, '#ff416c'); artGrad.addColorStop(1, '#ff4b2b'); mCtx.fillStyle = artGrad; mCtx.fillRect(0, 0, menuArtCanvas.width, menuArtCanvas.height);
-            mCtx.fillStyle = "#fff"; mCtx.font = "bold 24px 'Segoe UI', sans-serif"; mCtx.textAlign = "center"; mCtx.fillText("STICKMAN CLASH PRO", menuArtCanvas.width / 2, menuArtCanvas.height / 2 + 8);
-        };
-
-        // --- GAME SYSTEM MODES CONFIG ---
-        let currentGameMode = '2player_local'; 
-        let networkRole = null; 
-        let peer = null;
-        let conn = null;
-
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-        window.addEventListener('resize', resizeCanvas); resizeCanvas();
-
-        let gameActive = false;
-        const gravity = 0.55;
-        const groundYOffset = 90;
-        let coins = 300; 
         
-        const skinsDB = {
-            basic: { name: 'Basic', colors: ['#ffbd59', '#ff4757', '#1e90ff', '#ff00a0'], costs: [0, 50, 100, 200], owned: [true, false, false, false], dmgBonus: [0, 3, 6, 10] },
-            mage: { name: 'Mage', colors: ['#4facfe', '#2f3640', '#2ed573', '#9b59b6'], costs: [0, 50, 100, 200], owned: [true, false, false, false], dmgBonus: [0, 3, 6, 10] },
-            apple: { name: 'Apple', colors: ['#e84118', '#f1c40f', '#8e44ad', '#00ffcc'], costs: [0, 50, 100, 200], owned: [true, false, false, false], dmgBonus: [0, 3, 6, 10] },
-            ninja: { name: 'Ninja', colors: ['#7f8fa6', '#2f3542', '#c23616', '#ffd700'], costs: [0, 50, 100, 200], owned: [true, false, false, false], dmgBonus: [0, 3, 6, 10] }
+        const mapSize = 12000; 
+        let gameActive = false;
+        let isShopOpen = false;
+        let trashArray = [];
+        let mouse = { x: 0, y: 0 };
+        const trashTypes = ['🍌', '🥫', '🥤', '🍼', '📦', '🍏', '🧻', '🍕', '🚗', '🛋️', '🌲', '🏠'];
+
+        let peer = null;
+        let connToHost = null;      
+        let clientConnections = []; 
+        let isHost = false;
+        let roomCode = "";
+
+        let localPlayer = { id: "", name: "Player", x: 0, y: 0, radius: 25, color: '#ff0055' };
+        let remotePlayers = {}; 
+
+        let coins = 0;
+        let upgrades = {
+            vacuum: { level: 1, cost: 150 },
+            speed: { level: 1, cost: 200 },
+            mult: { level: 1, cost: 250 }
         };
 
-        const charClasses = {
-            basic: { type: 'basic', isRanged: false, cooldown: 15, name: 'BASIC BRAWLER', baseDmg: 12 },
-            mage: { type: 'mage', isRanged: true, cooldown: 35, projSpeed: 9, name: 'MAGE MASTER', baseDmg: 10 },
-            apple: { type: 'apple', isRanged: true, cooldown: 40, projSpeed: 7, name: 'APPLE GUY', baseDmg: 10 },
-            ninja: { type: 'ninja', isRanged: true, cooldown: 25, projSpeed: 12, name: 'SHADOW NINJA', baseDmg: 10 }
-        };
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
 
-        let selectedP1 = 'basic', selectedP1Skin = 0, selectedP1Bot = 'basic';
-        let selectedP2 = 'mage', selectedP2Skin = 0, selectedP2Bot = 'mage';
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = e.clientX - canvas.width / 2;
+            mouse.y = e.clientY - canvas.height / 2;
+        });
 
-        // --- CORE NAVIGATION & UI LAYOUT LISTENERS ---
-        function openSelectionMenu(mode) {
-            currentGameMode = mode;
-            document.getElementById('menu-screen').style.display = 'none';
-            document.getElementById('char-select-screen').style.display = 'flex';
-            
-            document.getElementById('p1-bot-section').style.display = (mode === 'team_battle') ? 'block' : 'none';
-            document.getElementById('p2-bot-section').style.display = (mode === 'team_battle') ? 'block' : 'none';
-            document.getElementById('panel-p2-ui').style.display = (mode === '1player') ? 'none' : 'flex';
-            
-            if(mode === 'online_multi') {
-                document.getElementById('selection-main-header').innerText = `ONLINE ROOM: PLAYER SELECT (${networkRole.toUpperCase()})`;
-                if (networkRole === 'client') {
-                    document.getElementById('panel-p1-ui').style.opacity = '0.4';
-                    document.getElementById('panel-p1-ui').style.pointerEvents = 'none';
-                } else {
-                    document.getElementById('panel-p2-ui').style.opacity = '0.4';
-                    document.getElementById('panel-p2-ui').style.pointerEvents = 'none';
-                }
-            } else {
-                document.getElementById('selection-main-header').innerText = "CHOOSE YOUR FIGHTER";
-                document.getElementById('panel-p1-ui').style.opacity = '1';
-                document.getElementById('panel-p1-ui').style.pointerEvents = 'auto';
-                document.getElementById('panel-p2-ui').style.opacity = '1';
-                document.getElementById('panel-p2-ui').style.pointerEvents = 'auto';
+        window.addEventListener('keydown', (e) => {
+            if (e.key.toLowerCase() === 'p' && gameActive) {
+                toggleShop();
             }
-
-            renderSkinSquares('p1', selectedP1);
-            if (mode !== '1player') renderSkinSquares('p2', selectedP2);
-        }
-
-        document.getElementById('btn-1player').addEventListener('click', () => openSelectionMenu('1player'));
-        document.getElementById('btn-2player-local').addEventListener('click', () => openSelectionMenu('2player_local'));
-        document.getElementById('btn-team-battle').addEventListener('click', () => openSelectionMenu('team_battle'));
-        document.getElementById('btn-online-room').addEventListener('click', () => {
-            document.getElementById('menu-screen').style.display = 'none';
-            document.getElementById('mp-modal').style.display = 'flex';
         });
 
-        function closeMPModal() { document.getElementById('mp-modal').style.display = 'none'; document.getElementById('menu-screen').style.display = 'flex'; }
-
-        // --- PEER-TO-PEER DATA-STREAM NETWORKING ROOM CODES ---
-        function initPeer(idToRegister) {
-            peer = new Peer(idToRegister, { debug: 1 });
-            
-            peer.on('open', (id) => {
-                document.getElementById('room-status').innerText = `Room Active. Code: ${id}. Waiting for peer link...`;
-            });
-
-            peer.on('connection', (connection) => {
-                conn = connection;
-                networkRole = 'host';
-                setupConnectionListeners();
-            });
-
-            peer.on('error', (err) => {
-                document.getElementById('room-status').innerText = `Connection error or code taken.`;
-                console.error(err);
-            });
+        function updateStatus(msg) {
+            document.getElementById('statusText').innerText = msg;
         }
 
-        document.getElementById('btn-host-room').addEventListener('click', () => {
-            let customCode = document.getElementById('room-code-input').value.trim().toUpperCase();
-            if(!customCode) { document.getElementById('room-status').innerText = "Please enter a custom Code string first!"; return;}
-            initPeer(customCode);
-        });
+        function toggleShop() {
+            isShopOpen = !isShopOpen;
+            const shopMenu = document.getElementById('shopMenu');
+            if(isShopOpen) {
+                shopMenu.classList.remove('hidden');
+                updateShopButtons();
+            } else {
+                shopMenu.classList.add('hidden');
+            }
+        }
 
-        document.getElementById('btn-join-room').addEventListener('click', () => {
-            let customCode = document.getElementById('room-code-input').value.trim().toUpperCase();
-            if(!customCode) { document.getElementById('room-status').innerText = "Enter target host room code."; return;}
+        function updateShopButtons() {
+            document.getElementById('coins').innerText = Math.floor(coins);
             
-            document.getElementById('room-status').innerText = `Searching for connection parameters...`;
-            peer = new Peer({ debug: 1 });
+            let btnVac = document.getElementById('btnVac');
+            btnVac.innerText = upgrades.vacuum.level >= 5 ? "MAX" : `${upgrades.vacuum.cost} 🪙`;
+            btnVac.disabled = (coins < upgrades.vacuum.cost || upgrades.vacuum.level >= 5);
+
+            let btnSpeed = document.getElementById('btnSpeed');
+            btnSpeed.innerText = upgrades.speed.level >= 5 ? "MAX" : `${upgrades.speed.cost} 🪙`;
+            btnSpeed.disabled = (coins < upgrades.speed.cost || upgrades.speed.level >= 5);
+
+            let btnMult = document.getElementById('btnMult');
+            btnMult.innerText = upgrades.mult.level >= 5 ? "MAX" : `${upgrades.mult.cost} 🪙`;
+            btnMult.disabled = (coins < upgrades.mult.cost || upgrades.mult.level >= 5);
+        }
+
+        function buyUpgrade(type) {
+            let up = upgrades[type];
+            if (coins >= up.cost && up.level < 5) {
+                coins -= up.cost;
+                up.level++;
+                up.cost = Math.floor(up.cost * 1.6);
+                updateShopButtons();
+            }
+        }
+
+        function hostGame() {
+            let name = document.getElementById('usernameInput').value.trim() || "Host";
+            localPlayer.name = name;
+            roomCode = Math.random().toString(36).substring(2, 6).toUpperCase(); 
+            isHost = true;
+            
+            updateStatus("Connecting...");
+            peer = new Peer('BHPVP-' + roomCode);
             
             peer.on('open', () => {
-                conn = peer.connect(customCode);
-                networkRole = 'client';
-                setupConnectionListeners();
-            });
-        });
-
-        function setupConnectionListeners() {
-            conn.on('open', () => {
-                document.getElementById('room-status').innerText = `Connected! Syncing configurations...`;
-                setTimeout(() => {
-                    document.getElementById('mp-modal').style.display = 'none';
-                    openSelectionMenu('online_multi');
-                }, 1000);
+                localPlayer.id = peer.id;
+                document.getElementById('homeScreen').classList.add('hidden');
+                document.getElementById('lobbyScreen').classList.remove('hidden');
+                document.getElementById('lobbyCodeDisplay').innerText = roomCode;
             });
 
-            conn.on('data', (data) => {
-                if(data.type === 'sync_character') {
-                    if(networkRole === 'host') {
-                        selectedP2 = data.char; 
-                        selectedP2Skin = data.skin;
-                        document.querySelectorAll(`#p2-grid .char-btn`).forEach(b => {
-                            b.classList.toggle('p2-selected', b.getAttribute('data-char') === selectedP2);
-                        });
-                        renderSkinSquares('p2', selectedP2);
-                        const p2SkinContainer = document.getElementById('p2-skin-row');
-                        if (p2SkinContainer && p2SkinContainer.children[selectedP2Skin]) {
-                            Array.from(p2SkinContainer.children).forEach(c => c.classList.remove('active-p2'));
-                            p2SkinContainer.children[selectedP2Skin].classList.add('active-p2');
+            peer.on('connection', (conn) => {
+                conn.on('open', () => {
+                    clientConnections.push(conn);
+                    conn.send({ type: 'INIT_CONFIRM', trash: trashArray });
+
+                    conn.on('data', (data) => {
+                        if (data.type === 'CLIENT_UPDATE') {
+                            if (!remotePlayers[conn.peer]) {
+                                remotePlayers[conn.peer] = { id: conn.peer, targetX: data.x, targetY: data.y, x: data.x, y: data.y, radius: data.radius, name: data.name, color: data.color, vacLevel: data.vacLevel || 1 };
+                            } else {
+                                remotePlayers[conn.peer].targetX = data.x;
+                                remotePlayers[conn.peer].targetY = data.y;
+                                remotePlayers[conn.peer].radius = data.radius;
+                                remotePlayers[conn.peer].name = data.name;
+                                remotePlayers[conn.peer].vacLevel = data.vacLevel || 1;
+                            }
+                            if(gameActive) conn.send({ type: 'START_GAME' });
                         }
-                    } else {
-                        selectedP1 = data.char; 
-                        selectedP1Skin = data.skin;
-                        document.querySelectorAll(`#p1-grid .char-btn`).forEach(b => {
-                            b.classList.toggle('p1-selected', b.getAttribute('data-char') === selectedP1);
-                        });
-                        renderSkinSquares('p1', selectedP1);
-                        const p1SkinContainer = document.getElementById('p1-skin-row');
-                        if (p1SkinContainer && p1SkinContainer.children[selectedP1Skin]) {
-                            Array.from(p1SkinContainer.children).forEach(c => c.classList.remove('active-p1'));
-                            p1SkinContainer.children[selectedP1Skin].classList.add('active-p1');
+                    });
+                });
+                conn.on('close', () => {
+                    clientConnections = clientConnections.filter(c => c.peer !== conn.peer);
+                    delete remotePlayers[conn.peer];
+                });
+            });
+
+            for (let i = 0; i < 2500; i++) spawnTrash(true);
+        }
+
+        function joinGame() {
+            let name = document.getElementById('usernameInput').value.trim() || "Guest";
+            localPlayer.name = name;
+            roomCode = document.getElementById('joinCodeInput').value.trim().toUpperCase();
+            isHost = false;
+
+            if (roomCode.length !== 4) return;
+            updateStatus("Searching...");
+            peer = new Peer();
+
+            peer.on('open', (id) => {
+                localPlayer.id = id;
+                localPlayer.color = '#00ffcc'; 
+                connToHost = peer.connect('BHPVP-' + roomCode);
+                
+                connToHost.on('open', () => {
+                    document.getElementById('homeScreen').classList.add('hidden');
+                    document.getElementById('lobbyScreen').classList.remove('hidden');
+                    document.getElementById('lobbyCodeDisplay').innerText = roomCode;
+                    document.getElementById('startBtn').innerText = "Waiting for Host...";
+                    document.getElementById('startBtn').disabled = true;
+                });
+
+                connToHost.on('data', (data) => {
+                    if (data.type === 'INIT_CONFIRM') trashArray = data.trash;
+                    if (data.type === 'START_GAME') {
+                        document.getElementById('lobbyScreen').classList.add('hidden');
+                        document.getElementById('hudRoomCode').innerText = roomCode;
+                        document.getElementById('shopToggleBtn').classList.remove('hidden');
+                        gameActive = true;
+                        requestAnimationFrame(update);
+                    }
+                    if (data.type === 'HOST_BROADCAST') {
+                        trashArray = data.trash;
+                        for (let id in data.players) {
+                            let pData = data.players[id];
+                            if (!remotePlayers[id]) {
+                                remotePlayers[id] = { id: id, x: pData.x, y: pData.y, targetX: pData.x, targetY: pData.y, radius: pData.radius, name: pData.name, color: pData.color };
+                            } else {
+                                remotePlayers[id].targetX = pData.x;
+                                remotePlayers[id].targetY = pData.y;
+                                remotePlayers[id].radius = pData.radius;
+                            }
+                        }
+                        for (let id in remotePlayers) {
+                            if (!data.players[id] && id !== localPlayer.id) delete remotePlayers[id];
                         }
                     }
-                }
-                if(data.type === 'trigger_start') {
-                    currentGameMode = 'online_multi';
-                    selectedP1 = data.p1; selectedP1Skin = data.p1Skin;
-                    selectedP2 = data.p2; selectedP2Skin = data.p2Skin;
-                    document.getElementById('char-select-screen').style.display = 'none';
-                    document.getElementById('game-screen').style.display = 'block';
-                    initGame();
-                }
-                if(data.type === 'input_stream') {
-                    let targetObj = (data.role === 'host') ? p1 : p2;
-                    if(targetObj) {
-                        targetObj.vx = data.vx;
-                        if(data.vy !== null) targetObj.vy = data.vy;
-                        targetObj.facing = data.facing;
-                        if(data.atkTrigger) triggerAttack(targetObj, (data.role === 'host') ? p2 : p1, data.isSpecial);
+                    if (data.type === 'GROW') {
+                        localPlayer.radius += data.amount;
+                        coins += data.coinAward;
+                        document.getElementById('coins').innerText = Math.floor(coins);
                     }
-                }
-            });
-        }
-
-        function transmitSync(charId, skinIdx) {
-            if(currentGameMode === 'online_multi' && conn && conn.open) {
-                conn.send({ type: 'sync_character', char: charId, skin: skinIdx });
-            }
-        }
-
-        // --- SKINS AND STORE ENGINE CONFIGS ---
-        function updateCoins(amount) {
-            coins += amount; document.getElementById('ui-coins').innerText = `🪙 ${coins}`; document.getElementById('shop-coins').innerText = `🪙 ${coins}`;
-        }
-        function buildShop() {
-            const container = document.getElementById('shop-container'); container.innerHTML = '';
-            for (let char in skinsDB) {
-                let data = skinsDB[char]; let col = document.createElement('div'); col.className = 'shop-column';
-                col.innerHTML = `<div class="shop-char-name">${data.name.toUpperCase()}</div>`;
-                data.colors.forEach((color, i) => {
-                    if(i === 0) return; let item = document.createElement('div'); item.className = 'skin-item';
-                    let isOwned = data.owned[i]; let cost = data.costs[i]; let bonus = data.dmgBonus[i];
-                    let specialText = i === 3 ? "<div class='skin-benefit' style='color:#f1c40f;'>+ SPECIAL ABILITY!</div>" : "";
-                    item.innerHTML = `<div><div class="skin-preview" style="background:${color};"></div><div class="skin-benefit">+${bonus} DMG</div>${specialText}</div>
-                        <button class="buy-btn" ${isOwned ? 'disabled' : ''} onclick="buySkin('${char}', ${i}, ${cost})">${isOwned ? 'OWNED' : '🪙 ' + cost}</button>`;
-                    col.appendChild(item);
-                });
-                container.appendChild(col);
-            }
-        }
-        function buySkin(char, skinIdx, cost) { if (coins >= cost && !skinsDB[char].owned[skinIdx]) { updateCoins(-cost); skinsDB[char].owned[skinIdx] = true; buildShop(); } }
-        document.getElementById('btn-shop').addEventListener('click', () => { document.getElementById('menu-screen').style.display = 'none'; document.getElementById('shop-screen').style.display = 'flex'; buildShop(); });
-        function closeShop() { document.getElementById('shop-screen').style.display = 'none'; document.getElementById('menu-screen').style.display = 'flex'; }
-
-        // --- RENDER HERO SELECTION TILES ---
-        function renderSkinSquares(player, charId) {
-            const row = document.getElementById(`${player}-skin-row`); row.innerHTML = '';
-            skinsDB[charId].colors.forEach((color, i) => {
-                let sq = document.createElement('div'); sq.className = `tiny-square ${skinsDB[charId].owned[i] ? '' : 'locked'}`;
-                
-                if (player === 'p1' && i === selectedP1Skin) sq.classList.add(`active-p1`);
-                if (player === 'p2' && i === selectedP2Skin) sq.classList.add(`active-p2`);
-                
-                sq.style.backgroundColor = color;
-                sq.addEventListener('click', () => {
-                    if (skinsDB[charId].owned[i]) {
-                        Array.from(row.children).forEach(c => c.classList.remove(`active-${player}`)); sq.classList.add(`active-${player}`);
-                        if (player === 'p1') { selectedP1Skin = i; transmitSync(selectedP1, i); } else { selectedP2Skin = i; transmitSync(selectedP2, i); }
-                    }
-                });
-                row.appendChild(sq);
-            });
-        }
-
-        function setupSelection(gridId, playerPrefix, selectedClass) {
-            const btns = document.querySelectorAll(`#${gridId} .char-btn`);
-            btns.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    btns.forEach(b => b.classList.remove(selectedClass)); btn.classList.add(selectedClass);
-                    let charId = btn.getAttribute('data-char');
-                    if (playerPrefix === 'p1') { selectedP1 = charId; renderSkinSquares('p1', charId); transmitSync(charId, selectedP1Skin); }
-                    else { selectedP2 = charId; renderSkinSquares('p2', charId); transmitSync(charId, selectedP2Skin); }
+                    if (data.type === 'RESET') triggerLocalReset(data.eatenBy);
                 });
             });
         }
-        setupSelection('p1-grid', 'p1', 'p1-selected'); setupSelection('p2-grid', 'p2', 'p2-selected');
 
-        function setupBotSelection(gridId, pfx, sClass) {
-            const btns = document.querySelectorAll(`#${gridId} .char-btn`);
-            btns.forEach(b => b.addEventListener('click', () => {
-                btns.forEach(x => x.classList.remove(sClass)); b.classList.add(sClass);
-                if(pfx === 'p1') selectedP1Bot = b.getAttribute('data-bot'); else selectedP2Bot = b.getAttribute('data-bot');
-            }));
-        }
-        setupBotSelection('p1-bot-grid', 'p1', 'p1-selected'); setupBotSelection('p2-bot-grid', 'p2', 'p2-selected');
-
-        // --- SUBMIT COMPONENT FIGHT LOGIC ---
-        document.getElementById('btn-start-fight').addEventListener('click', () => {
-            if(currentGameMode === 'online_multi') {
-                if(networkRole !== 'host') return; 
-                conn.send({ type: 'trigger_start', p1: selectedP1, p1Skin: selectedP1Skin, p2: selectedP2, p2Skin: selectedP2Skin });
-            }
-            if(currentGameMode === '1player') {
-                let options = ['basic', 'mage', 'apple', 'ninja'];
-                selectedP2 = options[Math.floor(Math.random() * options.length)];
-                selectedP2Skin = 0;
-            }
-            document.getElementById('char-select-screen').style.display = 'none';
-            document.getElementById('game-screen').style.display = 'block';
-            initGame();
-        });
-
-        // --- ENTITY INSTANCE GENERATION DATA MODEL ---
-        let p1, p2, projectiles = [];
-        let p1BotEntity = null, p2BotEntity = null;
-
-        function createPlayerObj(id, x, facing, charType, skinIdx, isBot = false) {
-            let config = charClasses[charType];
-            let color = skinsDB[charType].colors[skinIdx] || skinsDB[charType].colors[0];
-            let damageOutput = config.baseDmg + skinsDB[charType].dmgBonus[skinIdx];
-            return {
-                id: id, x: x, y: 0, vx: 0, vy: 0, width: 36, height: 85,
-                color: color, name: (isBot ? "ROBOT " : "") + config.name, type: config.type,
-                isRanged: config.isRanged, cooldownMax: config.cooldown, projSpeed: config.projSpeed,
-                health: 100, maxHealth: 100, isGrounded: false, facing: facing,
-                isAttacking: false, attackTimer: 0, currentCooldown: 0,
-                skinIdx: skinIdx, damage: damageOutput, isBot: isBot,
-                isFrozen: false, freezeTimer: 0, superJumpTimer: 0
-            };
-        }
-
-        function initGame() {
-            let w = canvas.width;
-            p1 = createPlayerObj('p1', w * 0.2, 'right', selectedP1, selectedP1Skin, false);
-            
-            if(currentGameMode === '1player') {
-                p2 = createPlayerObj('p2', w * 0.75, 'left', selectedP2, selectedP2Skin, true);
-            } else {
-                p2 = createPlayerObj('p2', w * 0.75, 'left', selectedP2, selectedP2Skin, false);
-            }
-
-            p1.y = canvas.height - groundYOffset - p1.height;
-            p2.y = canvas.height - groundYOffset - p2.height;
-
-            p1BotEntity = null; p2BotEntity = null;
-            document.getElementById('p1-team-sub-bars').style.display = 'none';
-            document.getElementById('p2-team-sub-bars').style.display = 'none';
-
-            if(currentGameMode === 'team_battle') {
-                p1BotEntity = createPlayerObj('p1_bot', w * 0.1, 'right', selectedP1Bot, 0, true);
-                p2BotEntity = createPlayerObj('p2_bot', w * 0.85, 'left', selectedP2Bot, 0, true);
-                p1BotEntity.y = canvas.height - groundYOffset - p1BotEntity.height;
-                p2BotEntity.y = canvas.height - groundYOffset - p2BotEntity.height;
-                
-                document.getElementById('p1-team-sub-bars').style.display = 'flex';
-                document.getElementById('p2-team-sub-bars').style.display = 'flex';
-                document.getElementById('p1-bot-health').style.width = '100%';
-                document.getElementById('p2-bot-health').style.width = '100%';
-            }
-
-            // Interface layout matching configuration criteria
-            if (selectedDevice === 'computer') {
-                document.getElementById('virtual-controls').style.display = 'none';
-            } else {
-                document.getElementById('virtual-controls').style.display = 'flex';
-                if(currentGameMode === 'online_multi') {
-                    document.getElementById('ctrl-zone-p1').style.display = (networkRole === 'host') ? 'flex' : 'none';
-                    document.getElementById('ctrl-zone-p2').style.display = (networkRole === 'client') ? 'flex' : 'none';
-                } else {
-                    document.getElementById('ctrl-zone-p1').style.display = 'flex';
-                    document.getElementById('ctrl-zone-p2').style.display = (currentGameMode === '1player') ? 'none' : 'flex';
-                }
-                document.getElementById('p1-spec').style.display = p1.skinIdx === 3 ? 'flex' : 'none';
-                document.getElementById('p2-spec').style.display = p2.skinIdx === 3 ? 'flex' : 'none';
-            }
-
-            document.getElementById('p1-label').innerText = p1.name;
-            document.getElementById('p2-label').innerText = p2.name;
-            projectiles = [];
-            
-            updateHealthUI();
-            document.getElementById('game-over').style.display = 'none';
+        function startMatch() {
+            if (!isHost) return;
+            document.getElementById('lobbyScreen').classList.add('hidden');
+            document.getElementById('hudRoomCode').innerText = roomCode;
+            document.getElementById('shopToggleBtn').classList.remove('hidden');
+            clientConnections.forEach(conn => conn.send({ type: 'START_GAME' }));
             gameActive = true;
+            setInterval(spawnTrash, 150); 
+            requestAnimationFrame(update);
         }
 
-        // --- COMPUTER KEYBOARD PIPELINE INTERFACE ---
-        const keysPressed = {};
-        window.addEventListener('keydown', (e) => {
-            if (!gameActive) return;
-            keysPressed[e.key.toLowerCase()] = true;
-
-            // Player 1 Combat Triggers (X and C)
-            if (selectedDevice === 'computer' && !(currentGameMode === 'online_multi' && networkRole === 'client')) {
-                if (e.key.toLowerCase() === 'x' && !p1.isFrozen) {
-                    triggerAttack(p1, p2, false);
-                    forwardNetworkInput(1, p1.vx, null, p1.facing, true, false);
-                }
-                if (e.key.toLowerCase() === 'c' && p1.skinIdx === 3 && !p1.isFrozen) {
-                    triggerAttack(p1, p2, true);
-                    forwardNetworkInput(1, p1.vx, null, p1.facing, true, true);
-                }
-            }
-
-            // Player 2 Combat Triggers (M and N)
-            if (selectedDevice === 'computer' && currentGameMode !== '1player' && !(currentGameMode === 'online_multi' && networkRole === 'host')) {
-                if (e.key.toLowerCase() === 'm' && !p2.isFrozen) {
-                    triggerAttack(p2, p1, false);
-                    forwardNetworkInput(2, p2.vx, null, p2.facing, true, false);
-                }
-                if (e.key.toLowerCase() === 'n' && p2.skinIdx === 3 && !p2.isFrozen) {
-                    triggerAttack(p2, p1, true);
-                    forwardNetworkInput(2, p2.vx, null, p2.facing, true, true);
-                }
-            }
-        });
-
-        window.addEventListener('keyup', (e) => {
-            keysPressed[e.key.toLowerCase()] = false;
-        });
-
-        function parseKeyboardInputs() {
-            if (!gameActive || selectedDevice !== 'computer') return;
-
-            // --- PLAYER 1 (WASD) ---
-            if (!(currentGameMode === 'online_multi' && networkRole === 'client') && !p1.isFrozen) {
-                let prevP1Vx = p1.vx;
-                p1.vx = 0;
-                if (keysPressed['a']) { p1.vx = -5; p1.facing = 'left'; }
-                if (keysPressed['d']) { p1.vx = 5; p1.facing = 'right'; }
-
-                let jumpY = null;
-                if (keysPressed['w'] && p1.isGrounded) {
-                    p1.vy = p1.superJumpTimer > 0 ? -24 : -14;
-                    p1.isGrounded = false;
-                    jumpY = p1.vy;
-                }
-                if (p1.vx !== prevP1Vx || jumpY !== null) {
-                    forwardNetworkInput(1, p1.vx, jumpY, p1.facing, false, false);
-                }
-            }
-
-            // --- PLAYER 2 (ARROW KEYS) ---
-            if (currentGameMode !== '1player' && !(currentGameMode === 'online_multi' && networkRole === 'host') && !p2.isFrozen) {
-                let prevP2Vx = p2.vx;
-                p2.vx = 0;
-                if (keysPressed['arrowleft']) { p2.vx = -5; p2.facing = 'left'; }
-                if (keysPressed['arrowright']) { p2.vx = 5; p2.facing = 'right'; }
-
-                let jumpY = null;
-                if (keysPressed['arrowup'] && p2.isGrounded) {
-                    p2.vy = p2.superJumpTimer > 0 ? -24 : -14;
-                    p2.isGrounded = false;
-                    jumpY = p2.vy;
-                }
-                if (p2.vx !== prevP2Vx || jumpY !== null) {
-                    forwardNetworkInput(2, p2.vx, jumpY, p2.facing, false, false);
-                }
-            }
-        }
-
-        // --- VIRTUAL TOUCH JOYSTICK CONTROLS HANDLER ---
-        function createJoystick(padId, knobId, pIdx) {
-            const pad = document.getElementById(padId); const knob = document.getElementById(knobId);
-            let activeTouchId = null;
-
-            function resolveTarget() { return (pIdx === 1) ? p1 : p2; }
-
-            pad.addEventListener('touchstart', (e) => {
-                if (activeTouchId !== null || !gameActive || resolveTarget().isFrozen) return;
-                activeTouchId = e.changedTouches[0].identifier; handleJoystickMove(e.changedTouches[0]);
-            }, { passive: false });
-
-            pad.addEventListener('touchmove', (e) => {
-                for (let i = 0; i < e.touches.length; i++) {
-                    if (e.touches[i].identifier === activeTouchId) {
-                        if(!resolveTarget().isFrozen) handleJoystickMove(e.touches[i]);
-                        e.preventDefault();
-                    }
-                }
-            }, { passive: false });
-
-            pad.addEventListener('touchend', (e) => {
-                for (let i = 0; i < e.changedTouches.length; i++) {
-                    if (e.changedTouches[i].identifier === activeTouchId) {
-                        activeTouchId = null; knob.style.transform = `translate(0px, 0px)`;
-                        let p = resolveTarget(); p.vx = 0;
-                        forwardNetworkInput(pIdx, p.vx, null, p.facing, false, false);
-                        break;
-                    }
-                }
-            });
-
-            function handleJoystickMove(touch) {
-                const rect = pad.getBoundingClientRect();
-                let deltaX = touch.clientX - (rect.left + rect.width / 2);
-                let deltaY = touch.clientY - (rect.top + rect.height / 2);
-                let dist = Math.sqrt(deltaX*deltaX + deltaY*deltaY);
-                if (dist > 35) { deltaX = (deltaX/dist)*35; deltaY = (deltaY/dist)*35; }
-
-                knob.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
-                let p = resolveTarget();
-
-                if (deltaX > 10) { p.vx = 5; p.facing = 'right'; } 
-                else if (deltaX < -10) { p.vx = -5; p.facing = 'left'; } else { p.vx = 0; }
-                
-                let jumpY = null;
-                if (deltaY < -22 && p.isGrounded) { 
-                    p.vy = p.superJumpTimer > 0 ? -24 : -14; p.isGrounded = false; jumpY = p.vy;
-                }
-                forwardNetworkInput(pIdx, p.vx, jumpY, p.facing, false, false);
-            }
-        }
-        createJoystick('joy-pad-p1', 'joy-knob-p1', 1);
-        createJoystick('joy-pad-p2', 'joy-knob-p2', 2);
-
-        function registerAtkBtn(btnId, pIdx, isSpec) {
-            document.getElementById(btnId).addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                let actor = (pIdx === 1) ? p1 : p2;
-                let enemy = (pIdx === 1) ? p2 : p1;
-                if(gameActive && !actor.isFrozen) {
-                    triggerAttack(actor, enemy, isSpec);
-                    forwardNetworkInput(pIdx, actor.vx, null, actor.facing, true, isSpec);
-                }
-            });
-        }
-        registerAtkBtn('p1-atk', 1, false); registerAtkBtn('p1-spec', 1, true);
-        registerAtkBtn('p2-atk', 2, false); registerAtkBtn('p2-spec', 2, true);
-
-        function forwardNetworkInput(pIdx, vx, vy, facing, atkTrigger, isSpecial) {
-            if(currentGameMode === 'online_multi' && conn && conn.open) {
-                if(networkRole === 'host' && pIdx !== 1) return;
-                if(networkRole === 'client' && pIdx !== 2) return;
-                conn.send({ type: 'input_stream', role: networkRole, vx: vx, vy: vy, facing: facing, atkTrigger: atkTrigger, isSpecial: isSpecial });
-            }
-        }
-
-        // --- COMBAT LOGIC ATTACK TRANSACTIONS ---
-        function triggerAttack(attacker, defender, isSpecial) {
-            if (attacker.currentCooldown <= 0) {
-                attacker.isAttacking = true; attacker.attackTimer = 12; 
-                attacker.currentCooldown = isSpecial ? 120 : attacker.cooldownMax;
-
-                if (isSpecial) {
-                    if (attacker.type === 'basic') { attacker.superJumpTimer = 600; } 
-                    else {
-                        let startX = attacker.facing === 'right' ? attacker.x + attacker.width : attacker.x;
-                        let pvx = attacker.facing === 'right' ? attacker.projSpeed : -attacker.projSpeed;
-                        let pSize = 20, dmg = attacker.damage, pType = attacker.type + '_spec';
-                        if (attacker.type === 'ninja') pSize = 65; if (attacker.type === 'apple') { pSize = 50; dmg = 15; } 
-                        projectiles.push({ x: startX, y: attacker.y + 20, vx: pvx, type: pType, owner: attacker.id, width: pSize, height: pSize, active: true, rotation: 0, color: attacker.color, damage: dmg });
-                    }
-                } else {
-                    if (attacker.isRanged) {
-                        let startX = attacker.facing === 'right' ? attacker.x + attacker.width : attacker.x;
-                        let pvx = attacker.facing === 'right' ? attacker.projSpeed : -attacker.projSpeed;
-                        projectiles.push({ x: startX, y: attacker.y + 25, vx: pvx, type: attacker.type, owner: attacker.id, width: 20, height: 20, active: true, rotation: 0, color: attacker.color, damage: attacker.damage });
-                    } else {
-                        executeMeleeCollision(attacker, defender);
-                    }
-                }
-            }
-        }
-
-        function executeMeleeCollision(attacker, primeTarget) {
-            let targets = [primeTarget];
-            if(currentGameMode === 'team_battle') {
-                if(attacker.id.startsWith('p1')) { if(p2BotEntity && p2BotEntity.health > 0) targets.push(p2BotEntity); }
-                else { if(p1BotEntity && p1BotEntity.health > 0) targets.push(p1BotEntity); }
-            }
-            let atkX = attacker.facing === 'right' ? attacker.x + attacker.width : attacker.x - 55;
-            targets.forEach(t => {
-                if (t && t.health > 0 && atkX + 55 > t.x && atkX < t.x + t.width && attacker.y + attacker.height > t.y && attacker.y < t.y + t.height) {
-                    applyDamage(t, attacker.damage, attacker.facing);
-                }
-            });
-        }
-
-        function applyDamage(defender, amount, attackDirection) {
-            if(defender.health <= 0) return;
-            defender.health -= amount; if (defender.health < 0) defender.health = 0;
-            updateHealthUI();
+        function spawnTrash(scatterWide = false) {
+            if (!isHost) return; 
             
-            defender.vx += attackDirection === 'right' ? 7 : -7; defender.vy = -3.5;
-            
-            if(p1.health <= 0 && (!p1BotEntity || p1BotEntity.health <= 0)) {
-                endGame("PLAYER 2 WINS");
-            } else if(p2.health <= 0 && (!p2BotEntity || p2BotEntity.health <= 0)) {
-                endGame("PLAYER 1 WINS");
-            }
-        }
-
-        function updateHealthUI() {
-            document.getElementById('p1-health').style.width = Math.max(0, p1.health) + '%';
-            document.getElementById('p2-health').style.width = Math.max(0, p2.health) + '%';
-            if(p1BotEntity) document.getElementById('p1-bot-health').style.width = p1BotEntity.health + '%';
-            if(p2BotEntity) document.getElementById('p2-bot-health').style.width = p2BotEntity.health + '%';
-        }
-
-        // --- ARTIFICIAL INTELLIGENCE CONTROLLERS ---
-        function runAI(bot, rival, ally) {
-            if(!gameActive || bot.health <= 0 || bot.isFrozen) return;
-            
-            let target = rival;
-            let dx = target.x - bot.x;
-            bot.facing = dx > 0 ? 'right' : 'left';
-
-            if(Math.abs(dx) > (bot.isRanged ? 280 : 45)) {
-                bot.vx = dx > 0 ? 3.5 : -3.5;
-            } else {
-                bot.vx = 0;
-                if(bot.currentCooldown <= 0) {
-                    triggerAttack(bot, target, (Math.random() < 0.08 && bot.skinIdx === 3));
+            if (trashArray.length < 3500) { 
+                let range = scatterWide ? mapSize / 2 - 150 : mapSize / 2 - 300;
+                let spawnCount = scatterWide ? 1 : 30; 
+                for(let k = 0; k < spawnCount; k++) {
+                    trashArray.push({
+                        x: (Math.random() - 0.5) * range * 2,
+                        y: (Math.random() - 0.5) * range * 2,
+                        emoji: trashTypes[Math.floor(Math.random() * trashTypes.length)],
+                        size: 35, scale: 1, angle: Math.random() * Math.PI * 2
+                    });
                 }
             }
-            if(Math.random() < 0.015 && bot.isGrounded) { bot.vy = -12; bot.isGrounded = false; }
         }
 
-        // --- CORE GAME ENGINE PROCESS LOOP ---
-        function update() {
+        function triggerLocalReset(predatorName) {
+            const banner = document.getElementById('deathAlert');
+            banner.innerText = `Swallowed by ${predatorName}! Resetting...`;
+            banner.style.opacity = '1';
+            localPlayer.radius = 25;
+            localPlayer.x = (Math.random() - 0.5) * 3000;
+            localPlayer.y = (Math.random() - 0.5) * 3000;
+            setTimeout(() => { banner.style.opacity = '0'; }, 2000);
+        }
+
+        let lastNetworkSend = 0;
+        const camera = { x: 0, y: 0, zoom: 1 };
+
+        function update(timestamp) {
             if (!gameActive) return;
 
-            parseKeyboardInputs();
+            let angle = Math.atan2(mouse.y, mouse.x);
+            let distance = Math.sqrt(mouse.x * mouse.x + mouse.y * mouse.y);
+            
+            let speedBonus = (upgrades.speed.level - 1) * 1.5;
+            let maxSpeed = Math.max(2, (9 + speedBonus) - (localPlayer.radius * 0.015)); 
+            let currentSpeed = Math.min(distance * 0.05, maxSpeed);
 
-            if(currentGameMode === '1player') runAI(p2, p1, null);
-            if(currentGameMode === 'team_battle') {
-                runAI(p1BotEntity, p2, p1);
-                runAI(p2BotEntity, p1, p2);
+            if (isShopOpen) currentSpeed = 0;
+
+            localPlayer.x += Math.cos(angle) * currentSpeed;
+            localPlayer.y += Math.sin(angle) * currentSpeed;
+
+            const halfMap = mapSize / 2;
+            if (localPlayer.x < -halfMap) localPlayer.x = -halfMap;
+            if (localPlayer.x > halfMap) localPlayer.x = halfMap;
+            if (localPlayer.y < -halfMap) localPlayer.y = -halfMap;
+            if (localPlayer.y > halfMap) localPlayer.y = halfMap;
+
+            for (let id in remotePlayers) {
+                let rp = remotePlayers[id];
+                if (rp.targetX !== undefined) {
+                    rp.x += (rp.targetX - rp.x) * 0.2; 
+                    rp.y += (rp.targetY - rp.y) * 0.2;
+                }
             }
 
-            let actors = [p1, p2];
-            if(currentGameMode === 'team_battle') { actors.push(p1BotEntity, p2BotEntity); }
+            if (timestamp - lastNetworkSend > 30) {
+                if (isHost) {
+                    remotePlayers[localPlayer.id] = localPlayer;
+                    localPlayer.vacLevel = upgrades.vacuum.level;
+                } else if (connToHost && connToHost.open) {
+                    connToHost.send({
+                        type: 'CLIENT_UPDATE',
+                        name: localPlayer.name,
+                        x: localPlayer.x, y: localPlayer.y,
+                        radius: localPlayer.radius, color: localPlayer.color,
+                        vacLevel: upgrades.vacuum.level
+                    });
+                }
+                lastNetworkSend = timestamp;
+                if(isShopOpen) updateShopButtons();
+            }
 
-            actors.forEach(p => {
-                if(!p || p.health <= 0) return;
-                if (p.isFrozen) { p.vx = 0; p.freezeTimer--; if (p.freezeTimer <= 0) p.isFrozen = false; }
-
-                p.vy += gravity; p.x += p.vx; p.y += p.vy;
-                const groundLevel = canvas.height - groundYOffset;
-                if (p.y + p.height >= groundLevel) { p.y = groundLevel - p.height; p.vy = 0; p.isGrounded = true; }
-                if (p.x < 0) p.x = 0; if (p.x + p.width > canvas.width) p.x = canvas.width - p.width;
-                if (p.isAttacking && --p.attackTimer <= 0) p.isAttacking = false;
-                if (p.currentCooldown > 0) p.currentCooldown--;
-                if (p.superJumpTimer > 0) p.superJumpTimer--;
-            });
-
-            projectiles.forEach(proj => {
-                if (!proj.active) return; proj.x += proj.vx;
-                if (proj.x < -100 || proj.x > canvas.width + 100) proj.active = false;
+            if (isHost) {
+                let playerList = Object.values(remotePlayers);
                 
-                let dynamicHitList = [];
-                if(proj.owner.startsWith('p1')) {
-                    dynamicHitList.push(p2); if(p2BotEntity) dynamicHitList.push(p2BotEntity);
-                } else {
-                    dynamicHitList.push(p1); if(p1BotEntity) dynamicHitList.push(p1BotEntity);
+                for (let i = trashArray.length - 1; i >= 0; i--) {
+                    let t = trashArray[i];
+                    let closestPlayer = null; let minDist = 99999;
+
+                    playerList.forEach(p => {
+                        let dx = p.x - t.x; let dy = p.y - t.y;
+                        let dist = Math.sqrt(dx*dx + dy*dy);
+                        if (dist < minDist) { minDist = dist; closestPlayer = p; }
+                    });
+
+                    if (closestPlayer) {
+                        let vLevel = closestPlayer.vacLevel || 1;
+                        let pullRadius = closestPlayer.radius * (5.5 + (vLevel * 1.2));
+                        
+                        if (minDist < pullRadius) {
+                            let force = (pullRadius - minDist) / pullRadius;
+                            let pullAngle = Math.atan2(closestPlayer.y - t.y, closestPlayer.x - t.x);
+                            t.x += Math.cos(pullAngle) * force * 11;
+                            t.y += Math.sin(pullAngle) * force * 11;
+                            t.scale = minDist / pullRadius;
+                        }
+                        
+                        if (minDist < closestPlayer.radius * 0.75) {
+                            let growth = (t.emoji === '🚗' || t.emoji === '🏠' || t.emoji === '🌲') ? 4 : 1.2;
+                            let actualGrowth = growth / (closestPlayer.radius * 0.04);
+                            
+                            if (closestPlayer.id === localPlayer.id) {
+                                localPlayer.radius += actualGrowth;
+                                coins += 10 * upgrades.mult.level;
+                                document.getElementById('coins').innerText = Math.floor(coins);
+                            } else {
+                                let pConn = clientConnections.find(c => c.peer === closestPlayer.id);
+                                if (pConn) {
+                                    pConn.send({ 
+                                        type: 'GROW', 
+                                        amount: actualGrowth,
+                                        coinAward: 10 * (closestPlayer.vacLevel || 1) 
+                                    });
+                                }
+                            }
+                            trashArray.splice(i, 1);
+                        }
+                    }
                 }
 
-                dynamicHitList.forEach(target => {
-                    if (target && target.health > 0 && proj.x < target.x + target.width && proj.x + proj.width > target.x && proj.y < target.y + target.height && proj.y + proj.height > target.y) {
-                        if (proj.type === 'mage_spec') { target.isFrozen = true; target.freezeTimer = 360; } 
-                        applyDamage(target, proj.damage, proj.vx > 0 ? 'right' : 'left'); proj.active = false;
+                let ids = Object.keys(remotePlayers);
+                for (let i = 0; i < ids.length; i++) {
+                    for (let j = 0; j < ids.length; j++) {
+                        if (i === j) continue;
+                        let p1 = remotePlayers[ids[i]]; let p2 = remotePlayers[ids[j]];
+                        if (!p1 || !p2) continue;
+
+                        let dx = p1.x - p2.x; let dy = p1.y - p2.y;
+                        let dist = Math.sqrt(dx*dx + dy*dy);
+
+                        if (p1.radius > p2.radius * 1.15 && dist < p1.radius * 0.8) {
+                            let sizeGained = p2.radius * 0.35;
+                            if (p1.id === localPlayer.id) {
+                                localPlayer.radius += sizeGained;
+                                coins += 100;
+                            } else {
+                                let p1Conn = clientConnections.find(c => c.peer === p1.id);
+                                if (p1Conn) p1Conn.send({ type: 'GROW', amount: sizeGained, coinAward: 100 });
+                            }
+
+                            if (p2.id === localPlayer.id) {
+                                triggerLocalReset(p1.name);
+                            } else {
+                                let p2Conn = clientConnections.find(c => c.peer === p2.id);
+                                if (p2Conn) p2Conn.send({ type: 'RESET', eatenBy: p1.name });
+                                p2.radius = 25; p2.x = (Math.random() - 0.5) * 3000; p2.y = (Math.random() - 0.5) * 3000;
+                            }
+                        }
                     }
+                }
+
+                clientConnections.forEach(conn => {
+                    let outPlayers = {};
+                    for (let id in remotePlayers) {
+                        if (id !== conn.peer) {
+                            outPlayers[id] = { x: remotePlayers[id].x, y: remotePlayers[id].y, radius: remotePlayers[id].radius, name: remotePlayers[id].name, color: remotePlayers[id].color };
+                        }
+                    }
+                    conn.send({ type: 'HOST_BROADCAST', players: outPlayers, trash: trashArray });
                 });
-            });
-            projectiles = projectiles.filter(p => p.active);
-        }
-
-        // --- SHADER GRAPH VECTOR DESIGN GRAPHICS ---
-        function drawStickman(p) {
-            if(!p || p.health <= 0) return;
-            if (p.isFrozen) { ctx.fillStyle = 'rgba(0, 216, 255, 0.4)'; ctx.fillRect(p.x - 5, p.y - 5, p.width + 10, p.height + 10); }
-
-            ctx.strokeStyle = p.color; ctx.lineWidth = 4.5; ctx.fillStyle = p.color; ctx.lineCap = 'round';
-            let centerX = p.x + p.width / 2; let headY = p.y + 15; let pelvisY = headY + 32;
-
-            ctx.beginPath(); ctx.arc(centerX, headY, 11, 0, Math.PI * 2); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(centerX, headY + 11); ctx.lineTo(centerX, pelvisY); ctx.stroke();
-
-            let walkCycle = Math.sin(Date.now() * 0.012) * 12;
-            let legMovement = (Math.abs(p.vx) > 0.5 && p.isGrounded) ? walkCycle : 0;
-            ctx.beginPath(); ctx.moveTo(centerX, pelvisY); ctx.lineTo(centerX - 10 - legMovement, p.y + p.height);
-            ctx.moveTo(centerX, pelvisY); ctx.lineTo(centerX + 10 + legMovement, p.y + p.height); ctx.stroke();
-
-            let armY = headY + 12; ctx.beginPath();
-            if (p.isAttacking && p.type === 'basic') { ctx.moveTo(centerX, armY); ctx.lineTo(p.facing === 'right' ? centerX + 36 : centerX - 36, armY - 2); } 
-            else if (p.isAttacking && p.isRanged) { ctx.moveTo(centerX, armY); ctx.lineTo(p.facing === 'right' ? centerX + 25 : centerX - 25, armY - 10); } 
-            else { ctx.moveTo(centerX, armY); ctx.lineTo(centerX - 14, armY + 14); ctx.moveTo(centerX, armY); ctx.lineTo(centerX + 14, armY + 14); }
-            ctx.stroke();
-
-            if (p.type === 'basic') {
-                ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(p.facing === 'right' ? centerX+16 : centerX-16, armY+2, 12, 0, Math.PI*2); ctx.fill(); ctx.stroke();
-            } else if (p.type === 'mage') {
-                ctx.strokeStyle = '#a0aab5'; ctx.lineWidth = 3.5; ctx.beginPath(); let sX = p.facing === 'right' ? centerX+14 : centerX-14; ctx.moveTo(sX, armY-25); ctx.lineTo(sX, armY+30); ctx.stroke();
-                ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(sX, armY-25, 5, 0, Math.PI*2); ctx.fill();
-            } else if (p.type === 'apple') {
-                let hX = p.facing === 'right' ? centerX+14 : centerX-14; ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(hX, armY+14, 6, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = '#2ed573'; ctx.fillRect(hX-1, armY+6, 3, 4);
-            } else if (p.type === 'ninja') {
-                ctx.strokeStyle = p.color; ctx.lineWidth = 3; ctx.beginPath(); let tX = p.facing === 'right' ? centerX-11 : centerX+11; ctx.moveTo(tX, headY); ctx.lineTo(tX + (p.facing === 'right' ? -15 : 15), headY+5); ctx.stroke();
             }
+
+            let targetZoom = 25 / localPlayer.radius;
+            if (targetZoom < 0.12) targetZoom = 0.12; 
+            camera.zoom += (targetZoom - camera.zoom) * 0.05;
+            camera.x += (localPlayer.x - camera.x) * 0.1;
+            camera.y += (localPlayer.y - camera.y) * 0.1;
+
+            ctx.fillStyle = '#0b0b10';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.save();
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.scale(camera.zoom, camera.zoom);
+            ctx.translate(-camera.x, -camera.y);
+
+            ctx.fillStyle = '#14141c'; ctx.fillRect(-halfMap, -halfMap, mapSize, mapSize);
+            ctx.strokeStyle = '#20202c'; ctx.lineWidth = 4;
+            for (let x = -halfMap; x <= halfMap; x += 150) { ctx.beginPath(); ctx.moveTo(x, -halfMap); ctx.lineTo(x, halfMap); ctx.stroke(); }
+            for (let y = -halfMap; y <= halfMap; y += 150) { ctx.beginPath(); ctx.moveTo(-halfMap, y); ctx.lineTo(halfMap, y); ctx.stroke(); }
+            ctx.strokeStyle = '#ff0055'; ctx.lineWidth = 15; ctx.strokeRect(-halfMap, -halfMap, mapSize, mapSize);
+
+            trashArray.forEach(t => {
+                ctx.save(); ctx.translate(t.x, t.y); ctx.scale(t.scale || 1, t.scale || 1);
+                ctx.font = '32px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(t.emoji, 0, 0); ctx.restore();
+            });
+
+            let allPlayersToRender = Object.values(remotePlayers);
+            if(!isHost) allPlayersToRender.push(localPlayer);
+
+            allPlayersToRender.forEach(p => {
+                let glow = ctx.createRadialGradient(p.x, p.y, p.radius * 0.2, p.x, p.y, p.radius * 2);
+                glow.addColorStop(0, 'rgba(0, 0, 0, 1)'); glow.addColorStop(0.3, p.color || '#ff0055'); glow.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(p.x, p.y, p.radius * 2, 0, Math.PI * 2); ctx.fill();
+
+                ctx.fillStyle = '#050508'; ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); ctx.stroke();
+
+                ctx.fillStyle = '#ffffff'; ctx.font = `${Math.max(14, p.radius * 0.4)}px Arial`; ctx.textAlign = 'center';
+                ctx.fillText(p.name, p.x, p.y - p.radius - 12);
+            });
+
+            ctx.restore();
+
+            document.getElementById('score').innerText = Math.floor(localPlayer.radius) + "m";
+            renderLeaderboard(allPlayersToRender);
+
+            requestAnimationFrame(update);
         }
 
-        function drawProjectiles() {
-            projectiles.forEach(proj => {
-                if (!proj.active) return; ctx.save(); ctx.translate(proj.x + proj.width/2, proj.y + proj.height/2);
-                if (proj.type === 'mage') { ctx.shadowBlur = 10; ctx.shadowColor = proj.color; ctx.fillStyle = proj.color; ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI*2); ctx.fill(); } 
-                else if (proj.type === 'mage_spec') { ctx.shadowBlur = 20; ctx.shadowColor = '#00d8d6'; ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI*2); ctx.fill(); ctx.strokeStyle = '#00d8d6'; ctx.lineWidth = 3; ctx.strokeRect(-10, -10, 20, 20); }
-                else if (proj.type === 'ninja') { proj.rotation += 0.4; ctx.rotate(proj.rotation); ctx.fillStyle = proj.color; ctx.beginPath(); ctx.moveTo(0, -12); ctx.lineTo(3, -3); ctx.lineTo(12, 0); ctx.lineTo(3, 3); ctx.lineTo(0, 12); ctx.lineTo(-3, 3); ctx.lineTo(-12, 0); ctx.lineTo(-3, -3); ctx.fill(); } 
-                else if (proj.type === 'ninja_spec') { proj.rotation += 0.6; ctx.rotate(proj.rotation); ctx.fillStyle = '#ffffff'; ctx.strokeStyle = proj.color; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(0, -30); ctx.lineTo(8, -8); ctx.lineTo(30, 0); ctx.lineTo(8, 8); ctx.lineTo(0, 30); ctx.lineTo(-8, 8); ctx.lineTo(-30, 0); ctx.lineTo(-8, -8); ctx.closePath(); ctx.fill(); ctx.stroke(); }
-                else if (proj.type === 'apple') { ctx.fillStyle = proj.color; ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI*2); ctx.fill(); } 
-                else if (proj.type === 'apple_spec') { ctx.fillStyle = '#2ed573'; ctx.beginPath(); ctx.arc(0, 0, 24, 0, Math.PI*2); ctx.fill(); }
-                ctx.restore();
+        function renderLeaderboard(allPlayers) {
+            const sorted = [...allPlayers].sort((a, b) => b.radius - a.radius);
+            const lbContainer = document.getElementById('leaderboardRows');
+            lbContainer.innerHTML = "";
+            sorted.slice(0, 5).forEach((p, idx) => {
+                let rowClass = (p.id === localPlayer.id) ? "lb-row local-player" : "lb-row";
+                lbContainer.innerHTML += `<div class="${rowClass}"><span>${idx + 1}. ${p.name}</span><span>${Math.floor(p.radius)}m</span></div>`;
             });
         }
-
-        function render() {
-            let bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height); bgGrad.addColorStop(0, '#060d1a'); bgGrad.addColorStop(1, '#02050a'); ctx.fillStyle = bgGrad; ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.015)'; ctx.fillRect(canvas.width * 0.15, canvas.height - 320, 140, 320); ctx.fillRect(canvas.width * 0.68, canvas.height - 380, 180, 380);
-            ctx.fillStyle = '#0a1324'; ctx.fillRect(0, canvas.height - groundYOffset, canvas.width, groundYOffset);
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.1)'; ctx.fillRect(0, canvas.height - groundYOffset, canvas.width, 1);
-            if (gameActive) { drawProjectiles(); drawStickman(p1); drawStickman(p2); drawStickman(p1BotEntity); drawStickman(p2BotEntity); }
-        }
-
-        function endGame(text) { gameActive = false; document.getElementById('win-text').innerText = text; updateCoins(50); document.getElementById('game-over').style.display = 'flex'; }
-        function resetToMenu() { document.getElementById('game-over').style.display = 'none'; document.getElementById('game-screen').style.display = 'none'; document.getElementById('menu-screen').style.display = 'flex'; }
-        function loop() { update(); render(); requestAnimationFrame(loop); } loop();
     </script>
 </body>
 </html>
